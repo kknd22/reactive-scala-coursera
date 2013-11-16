@@ -48,7 +48,7 @@ abstract class QuickCheckHeap extends Properties("Heap") with IntHeap {
       }
       val (_, _, ok) = checkMin(h, Int.MinValue)
       ok
-    }
+    }                                                          111
   }
 
 
@@ -58,7 +58,7 @@ abstract class QuickCheckHeap extends Properties("Heap") with IntHeap {
       val min = findMin(h)
       val min1 = findMin(h1)
       val min2 = findMin(h2)
-      val v = Math.min(min1, min2)
+      val v = Math.min(min1, min2)          11
       min == v
     }
   }

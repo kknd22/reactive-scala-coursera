@@ -26,6 +26,7 @@ abstract class CircuitSimulator extends Simulator {
   val InverterDelay: Int
   val AndGateDelay: Int
   val OrGateDelay: Int
+  val DeMuxDelay: Int
 
   def probe(name: String, wire: Wire) {
     wire addAction {
@@ -69,27 +70,43 @@ abstract class CircuitSimulator extends Simulator {
   }
   
   def orGate2(a1: Wire, a2: Wire, output: Wire) {
-    val a1Inv = new Wire
-    val a2Inv = new Wire
-    val a1a2InvAnd = new Wire
-    val result = new Wire
+    val a1Inv , a2Inv, a1a2InvAnd = new Wire
     inverter(a1, a1Inv)
     inverter(a2, a2Inv)
     andGate(a1Inv, a2Inv, a1a2InvAnd)
-    inverter(a1a2InvAnd, result)
+    inverter(a1a2InvAnd, output)
   }
 
   def demux(in: Wire, c: List[Wire], out: List[Wire]) {
-    if (!in.getSignal) out.foreach(_.setSignal(false))
+    if (!in.getSignal) {
+      def demuxAction() {
+        afterDelay(DeMuxDelay) {
+          out.foreach(_.setSignal(false))
+        }
+      }
+      c.foreach(_ addAction demuxAction)
+      in addAction demuxAction
+    }
     // - in.getSignal is true
     else {
+      val inSig = in.getSignal
+      val cSigs = c.map(_.getSignal)
       c match {
-        case Nil => out.head.setSignal(in.getSignal)
+        case Nil => {
+
+          def hAction() {
+            afterDelay(DeMuxDelay) {
+              out.head.setSignal(inSig)
+            }
+          }
+
+          in addAction hAction
+        }
         case x::xs => {
           val s = out.size /2
           val half1 = out.take(s)
           val half2 = out.drop(s)
-          if (!x.getSignal) {
+          if (!cSigs.head) {
             half1.foreach(_.setSignal(false))
             demux(in, xs, half2)
           } else {
@@ -97,11 +114,17 @@ abstract class CircuitSimulator extends Simulator {
             demux(in, xs, half1)
           }
           val whole = half1 ++ half2
-          var xss = xs
-          for (e <- whole) {
-            xss.head.setSignal(e.getSignal)
-            xss = xs.tail
+          var os = out
+
+          def rAction() {
+            for (e <- whole) {
+              afterDelay(DeMuxDelay) {
+                os.head.setSignal(e.getSignal)
+              }
+              os = xs.tail
+            }
           }
+
         }
       }
     }
@@ -113,6 +136,7 @@ object Circuit extends CircuitSimulator {
   val InverterDelay = 1
   val AndGateDelay = 3
   val OrGateDelay = 5
+  val DeMuxDelay = 7
 
   def andGateExample {
     val in1, in2, out = new Wire
