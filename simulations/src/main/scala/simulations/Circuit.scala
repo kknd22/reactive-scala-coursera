@@ -26,7 +26,7 @@ abstract class CircuitSimulator extends Simulator {
   val InverterDelay: Int
   val AndGateDelay: Int
   val OrGateDelay: Int
-  val DeMuxDelay: Int
+
 
   def probe(name: String, wire: Wire) {
     wire addAction {
@@ -78,65 +78,59 @@ abstract class CircuitSimulator extends Simulator {
   }
 
   def demux(in: Wire, c: List[Wire], out: List[Wire]) {
-    if (!in.getSignal) {
-      def demuxAction() {
-        afterDelay(DeMuxDelay) {
-          out.foreach(_.setSignal(false))
-        }
+    c match {
+      case Nil => {
+        andGate(in, in,  out.head)
       }
-      c.foreach(_ addAction demuxAction)
-      in addAction demuxAction
-    }
-    // - in.getSignal is true
-    else {
-      val inSig = in.getSignal
-      val cSigs = c.map(_.getSignal)
-      c match {
-        case Nil => {
-
-          def hAction() {
-            afterDelay(DeMuxDelay) {
-              out.head.setSignal(inSig)
-            }
-          }
-
-          in addAction hAction
-        }
-        case x::xs => {
-          val s = out.size /2
-          val half1 = out.take(s)
-          val half2 = out.drop(s)
-          if (!cSigs.head) {
-            half1.foreach(_.setSignal(false))
-            demux(in, xs, half2)
-          } else {
-            half2.foreach(_.setSignal(false))
-            demux(in, xs, half1)
-          }
-          val whole = half1 ++ half2
-          var os = out
-
-          def rAction() {
-            for (e <- whole) {
-              afterDelay(DeMuxDelay) {
-                os.head.setSignal(e.getSignal)
-              }
-              os = xs.tail
-            }
-          }
-
+      case r::Nil => {
+        andGate(in, r, out.tail.head)
+        val w = new Wire
+        inverter(r, w)
+        andGate(in, w, out.head)
+      }
+      case r::rs => {
+        val s = out.size/2
+        val ts = List.fill(s)(new Wire)
+        demux(in, rs, ts)
+        var l = out
+        ts.foreach { e =>
+          demux(e, r::Nil, l)
+          l = l.tail.tail
         }
       }
     }
   }
-
+/*
+  def demux(in: Wire, c: List[Wire], out: List[Wire]) {
+    val rc = c.reverse
+    rc match {
+      case Nil => {
+        andGate(in, in,  out.head)
+      }
+      case r::rs => {
+        val s = out.size
+        val h1 = out.take(s/2)
+        val h2 = out.drop(s/2)
+        if (!r.getSignal) {
+          h1.foreach(andGate(in, r, _))
+          demux(in, rs.reverse, h2)
+        } else {
+          val rNot = new Wire
+          inverter(r, rNot)
+          h2.foreach(andGate(in, rNot, _))
+          demux(in, rs.reverse, h1)
+        }
+      }
+    }
+  }
+  */
 }
 
 object Circuit extends CircuitSimulator {
   val InverterDelay = 1
   val AndGateDelay = 3
   val OrGateDelay = 5
-  val DeMuxDelay = 7
+
 
   def andGateExample {
     val in1, in2, out = new Wire

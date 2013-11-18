@@ -10,7 +10,7 @@ class CircuitSuite extends CircuitSimulator with FunSuite {
   val InverterDelay = 1
   val AndGateDelay = 3
   val OrGateDelay = 5
-  val DeMuxDelay = 7
+
 
   test("andGate example") {
     val in1, in2, out = new Wire
@@ -75,43 +75,44 @@ class CircuitSuite extends CircuitSimulator with FunSuite {
     assert(out.getSignal === true, "and 3")
   }
 
-  test("demux example") {
-    val in = new Wire
-    val c0, c1 = new Wire
-    val cs = c1::c0::List()
-    val r0, r1, r2, r3 = new Wire
-    val out = r3::r2::r1::r0::List()
+   test("demux example") {
+     val in = new Wire
+     val cs = List.fill(3){new Wire}
+     val out = List.fill(8){ new Wire}
 
-    demux(in, cs, out)
+     demux(in, cs, out)
+     in.setSignal(true)
 
-    in.setSignal(false)
-/*    run
+     /*
+          cs.head.setSignal(false)
+          cs.tail.head.setSignal(false)
+          cs.tail.tail.head.setSignal(true)
 
-    assert(r3.getSignal === false, "0 and r3")
-    assert(r2.getSignal === false, "0 and r2")
-    assert(r1.getSignal === false, "0 and r1")
-    assert(r0.getSignal === false, "0 and r0")
-*/
-    in.setSignal(true)
-    c0.setSignal(false)
-    c1.setSignal(false)
-    run
 
-    assert(r3.getSignal === false, "1 and r3")
-    assert(r2.getSignal === false, "1 and r2")
-    assert(r1.getSignal === false, "1 and r1")
-    assert(r0.getSignal === true, "1 and r0")
+         run
 
-    in.setSignal(true)
-    c0.setSignal(true)
-    c1.setSignal(true)
-    run
-    assert(r3.getSignal === true, "2 and r3" )
-    assert(r2.getSignal === false, "2 and r2")
-    assert(r1.getSignal === false, "2 and r1")
-    assert(r0.getSignal === false, "2 and r0")
+          print(out.map(_.getSignal))
+         val aout = out.toArray
+         for (i<- 0 to 7) {
+           if ( i != 1)
+             assert(aout(i).getSignal === false, s"3-8 gate and $i")
+           else
+             assert(aout(i).getSignal === true, s"3-8 gate and $i")
+         }
+     */
+     cs.head.setSignal(true)
+     cs.tail.head.setSignal(false)
+     cs.tail.tail.head.setSignal(true)
+     run
+     print(out map(_.getSignal))
 
+     val aout2 = out.toArray
+     for (i<- 0 to 7) {
+       if ( i != 5)
+         assert(aout2(i).getSignal === false, s"3-8 gate and $i")
+       else
+         assert(aout2(i).getSignal === true, s"3-8 gate and $i")
+     }
 
   }
-
 }
