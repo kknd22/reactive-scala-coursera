@@ -16,7 +16,16 @@ class EpidemySimulator extends Simulator {
 
   import SimConfig._
 
-  val persons: List[Person] = List() // to complete: construct list of persons
+  val persons: List[Person] = {
+    val s = for (i <- 0 until 300) yield {
+      val p =  new Person(i)
+      if (randomBelow(100) < 10) p.infected
+      p
+    }
+    s.toList
+  }
+
+
 
   class Person (val id: Int) {
     var infected = false
